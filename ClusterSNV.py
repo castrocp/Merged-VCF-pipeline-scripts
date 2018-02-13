@@ -2,6 +2,8 @@
 
 # This will run a 100-base-pair sliding window through the list of candidate denovo SNVs to determine which of them are within 100bps of each other.
 
+# Run as:  ClusterSNV.py inFileName
+
 import sys
 
 
@@ -11,7 +13,7 @@ def main():
 	inFileName = sys.argv[1]
 
 	with open (inFileName) as infile:
-		with open ('CandidatedDenovosClustered', "w") as outfile:
+		with open (inFileName + '.clustered', "w") as outfile:
 			outfile.write("Chrom" + "\t" + "start" + "\t" + "end" + "\t" + "ref" + "\t" + "alt" + "\t" + "geno" + "\t" + "famID" + "\t" + "regDB" + "\t" + "b_start" + "\t" + "b_end" + "\t" + "b_population" + "\n")
 			# Write a header to the ouput file
 			
@@ -38,12 +40,17 @@ def main():
 				
 				try:
 					next_variant_pos = int(infile.readline().strip("\n").split()[1])
+					# This is a shortened version of the parsing I did above.
+					# Index "1" points to the "start" coordinate of the variant on the next line
 				except:
+					outfile.write(line.strip("\n") + "\t" + str(start_bin) + "\t" + str(end_bin) + "\t" + str(bin_pop) + "\n")
 					break
-				# This is a shortened version of the parsing I did above. 
-				# Index "1" points to the "start" coordinate of the variant on the next line
+					# This will only occur when the last line of the input file is being processed
+					# Since there is no next line to read, it will just write the last entry to the outfile and finish				
 
-				while next_variant_pos - start_bin <= winSize:
+				while next_variant_pos - start_bin <= winSize and next_variant_pos - start_bin > -1:
+				# The condition requiring the difference to be positive prevents problems when switching from one chromosome to the next
+				# Otherwise, if the next chrom coordinate is smaller than the previous chrom coordinate, it yields a negative number, which is less than winSize
 					bin_pop += 1
 					# Keeps track of additional variants that fall within the bin
 					end_bin = next_variant_pos
